@@ -51,10 +51,17 @@ function resolveRunner() {
 }
 
 function run(cmd, args) {
-  const child = spawn(cmd, args, {
+  const useShell = process.platform === "win32";
+  let finalCmd = cmd;
+  if (useShell && cmd.includes(" ")) {
+    finalCmd = `"${cmd}"`;
+  }
+
+  const child = spawn(finalCmd, args, {
     cwd: uiDir,
     stdio: "inherit",
     env: process.env,
+    shell: useShell,
   });
   child.on("exit", (code, signal) => {
     if (signal) {
@@ -65,10 +72,17 @@ function run(cmd, args) {
 }
 
 function runSync(cmd, args, envOverride) {
-  const result = spawnSync(cmd, args, {
+  const useShell = process.platform === "win32";
+  let finalCmd = cmd;
+  if (useShell && cmd.includes(" ")) {
+    finalCmd = `"${cmd}"`;
+  }
+
+  const result = spawnSync(finalCmd, args, {
     cwd: uiDir,
     stdio: "inherit",
     env: envOverride ?? process.env,
+    shell: useShell,
   });
   if (result.signal) {
     process.exit(1);

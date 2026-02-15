@@ -6,6 +6,7 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
 } from "../../agents/agent-scope.js";
+import { loadAgentIdentityFromWorkspace, writeAgentIdentity } from "../../agents/identity-file.js";
 import {
   DEFAULT_AGENTS_FILENAME,
   DEFAULT_BOOTSTRAP_FILENAME,
@@ -256,17 +257,24 @@ export const agentsHandlers: GatewayRequestHandlers = {
       return;
     }
 
-    const workspaceDir = resolveUserPath(String(params.workspace ?? "").trim());
+    const workspaceDir = params.workspace?.trim()
+      ? resolveUserPath(params.workspace.trim())
+      : resolveAgentWorkspaceDir(cfg, agentId);
+
+    const emoji = resolveOptionalStringParam(params.emoji);
+    const avatar = resolveOptionalStringParam(params.avatar);
 
     // Resolve agentDir against the config we're about to persist (vs the pre-write config),
     // so subsequent resolutions can't disagree about the agent's directory.
     let nextConfig = applyAgentConfig(cfg, {
       agentId,
       name: rawName,
-      workspace: workspaceDir,
+      workspace: params.workspace?.trim() ? workspaceDir : undefined,
+      avatar,
+      emoji,
     });
     const agentDir = resolveAgentDir(nextConfig, agentId);
-    nextConfig = applyAgentConfig(nextConfig, { agentId, agentDir });
+    nextConfig = applyAgentConfig(nextConfig, { agentId, agentDir, avatar, emoji });
 
     // Ensure workspace & transcripts exist BEFORE writing config so a failure
     // here does not leave a broken config entry behind.
@@ -278,18 +286,11 @@ export const agentsHandlers: GatewayRequestHandlers = {
 
     // Always write Name to IDENTITY.md; optionally include emoji/avatar.
     const safeName = sanitizeIdentityLine(rawName);
-    const emoji = resolveOptionalStringParam(params.emoji);
-    const avatar = resolveOptionalStringParam(params.avatar);
-    const identityPath = path.join(workspaceDir, DEFAULT_IDENTITY_FILENAME);
-    const lines = [
-      "",
-      `- Name: ${safeName}`,
-      ...(emoji ? [`- Emoji: ${sanitizeIdentityLine(emoji)}`] : []),
-      ...(avatar ? [`- Avatar: ${sanitizeIdentityLine(avatar)}`] : []),
-      "",
-    ];
-    await fs.appendFile(identityPath, lines.join("\n"), "utf-8");
-
+    writeAgentIdentity(workspaceDir, {
+      name: safeName,
+      ...(emoji ? { emoji: sanitizeIdentityLine(emoji) } : {}),
+      ...(avatar ? { avatar: sanitizeIdentityLine(avatar) } : {}),
+    });
     respond(true, { ok: true, agentId, name: rawName, workspace: workspaceDir }, undefined);
   },
   "agents.update": async ({ params, respond }) => {
@@ -325,6 +326,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
 
     const model = resolveOptionalStringParam(params.model);
     const avatar = resolveOptionalStringParam(params.avatar);
+    const emoji = resolveOptionalStringParam(params.emoji);
 
     const nextConfig = applyAgentConfig(cfg, {
       agentId,
@@ -333,6 +335,8 @@ export const agentsHandlers: GatewayRequestHandlers = {
         : {}),
       ...(workspaceDir ? { workspace: workspaceDir } : {}),
       ...(model ? { model } : {}),
+      ...(avatar ? { avatar } : {}),
+      ...(emoji ? { emoji } : {}),
     });
 
     await writeConfigFile(nextConfig);
@@ -342,11 +346,19 @@ export const agentsHandlers: GatewayRequestHandlers = {
       await ensureAgentWorkspace({ dir: workspaceDir, ensureBootstrapFiles: !skipBootstrap });
     }
 
-    if (avatar) {
+    if (avatar || emoji || params.name) {
       const workspace = workspaceDir ?? resolveAgentWorkspaceDir(nextConfig, agentId);
       await fs.mkdir(workspace, { recursive: true });
-      const identityPath = path.join(workspace, DEFAULT_IDENTITY_FILENAME);
-      await fs.appendFile(identityPath, `\n- Avatar: ${sanitizeIdentityLine(avatar)}\n`, "utf-8");
+      const currentIdentity = loadAgentIdentityFromWorkspace(workspace) ?? {};
+      const nextIdentity = {
+        ...currentIdentity,
+        ...(avatar ? { avatar: sanitizeIdentityLine(avatar) } : {}),
+        ...(emoji ? { emoji: sanitizeIdentityLine(emoji) } : {}),
+        ...(typeof params.name === "string" && params.name.trim()
+          ? { name: params.name.trim() }
+          : {}),
+      };
+      writeAgentIdentity(workspace, nextIdentity);
     }
 
     respond(true, { ok: true, agentId }, undefined);

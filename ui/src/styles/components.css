@@ -8,7 +8,7 @@
   border: 1px solid var(--border);
   background: var(--card);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 24px;
   animation: rise 0.35s var(--ease-out) backwards;
   transition:
     border-color var(--duration-normal) var(--ease-out),
@@ -16,14 +16,42 @@
     transform var(--duration-normal) var(--ease-out);
   box-shadow:
     var(--shadow-sm),
-    inset 0 1px 0 var(--card-highlight);
+    inset 0 1px 1px var(--card-highlight);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background var(--duration-normal) ease;
 }
 
 .card:hover {
   border-color: var(--border-strong);
   box-shadow:
-    var(--shadow-md),
-    inset 0 1px 0 var(--card-highlight);
+    var(--shadow-lg),
+    inset 0 1px 1px var(--card-highlight);
+  transform: translateY(-2px);
+}
+
+.card:hover::after {
+  background: var(--accent-subtle);
+}
+
+.card--gateway {
+  border-top: 3px solid var(--accent);
+  background: linear-gradient(180deg, var(--card) 0%, var(--bg) 100%);
+}
+
+.card--snapshot {
+  border-top: 3px solid var(--accent-2);
+  background: linear-gradient(180deg, var(--card) 0%, var(--bg) 100%);
 }
 
 .card-title {
@@ -47,19 +75,21 @@
 .stat {
   background: var(--card);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 18px 20px;
   border: 1px solid var(--border);
   transition:
     border-color var(--duration-normal) var(--ease-out),
-    box-shadow var(--duration-normal) var(--ease-out);
+    box-shadow var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
   box-shadow: inset 0 1px 0 var(--card-highlight);
 }
 
 .stat:hover {
   border-color: var(--border-strong);
   box-shadow:
-    var(--shadow-sm),
+    var(--shadow-md),
     inset 0 1px 0 var(--card-highlight);
+  transform: scale(1.02);
 }
 
 .stat-label {
@@ -94,6 +124,49 @@
 .note-title {
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+.input-with-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-toggle input {
+  padding-right: 44px !important;
+  width: 100%;
+}
+
+.input-with-toggle .toggle-btn {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) ease;
+  z-index: 2;
+}
+
+.input-with-toggle .toggle-btn:hover {
+  color: var(--text-strong);
+  background: var(--bg-hover);
+}
+
+.input-with-toggle .toggle-btn .nav-item__icon {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  opacity: 0.6;
+}
+
+.input-with-toggle .toggle-btn:hover .nav-item__icon {
+  opacity: 1;
 }
 
 /* ===========================================
@@ -1269,6 +1342,7 @@
   100% {
     border-color: var(--border);
   }
+
   50% {
     border-color: var(--accent);
   }
@@ -1325,6 +1399,7 @@
     opacity: 0.4;
     transform: translateY(0);
   }
+
   40% {
     opacity: 1;
     transform: translateY(-3px);

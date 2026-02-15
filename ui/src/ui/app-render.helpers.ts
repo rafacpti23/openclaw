@@ -9,6 +9,7 @@ import { syncUrlWithSessionKey } from "./app-settings.ts";
 import { OpenClawApp } from "./app.ts";
 import { ChatState, loadChatHistory } from "./controllers/chat.ts";
 import { icons } from "./icons.ts";
+import { type Language } from "./locales.ts";
 import { iconForTab, pathForTab, titleForTab, type Tab } from "./navigation.ts";
 
 type SessionDefaultsSnapshot = {
@@ -46,6 +47,41 @@ function resetChatStateForSessionSwitch(state: AppViewState, sessionKey: string)
   });
 }
 
+export function renderLanguageSelector(state: AppViewState) {
+  const setLang = (lang: Language) => {
+    state.applySettings({
+      ...state.settings,
+      language: lang,
+    });
+  };
+
+  return html`
+    <div class="language-selector">
+      <button
+        class="btn btn--sm btn--icon ${state.settings.language === "en" ? "active" : ""}"
+        @click=${() => setLang("en")}
+        title="English"
+      >
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg" alt="English" style="width: 18px; display: block;" />
+      </button>
+      <button
+        class="btn btn--sm btn--icon ${state.settings.language === "pt" ? "active" : ""}"
+        @click=${() => setLang("pt")}
+        title="Português BR"
+      >
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Flag_of_Brazil.svg" alt="Português" style="width: 18px; display: block;" />
+      </button>
+      <button
+        class="btn btn--sm btn--icon ${state.settings.language === "es" ? "active" : ""}"
+        @click=${() => setLang("es")}
+        title="Español"
+      >
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Flag_of_Spain.svg" alt="Español" style="width: 18px; display: block;" />
+      </button>
+    </div>
+  `;
+}
+
 export function renderTab(state: AppViewState, tab: Tab) {
   const href = pathForTab(tab, state.basePath);
   return html`
@@ -73,10 +109,11 @@ export function renderTab(state: AppViewState, tab: Tab) {
         }
         state.setTab(tab);
       }}
-      title=${titleForTab(tab)}
+      }}
+      title=${titleForTab(tab, state.settings.language)}
     >
       <span class="nav-item__icon" aria-hidden="true">${icons[iconForTab(tab)]}</span>
-      <span class="nav-item__text">${titleForTab(tab)}</span>
+      <span class="nav-item__text">${titleForTab(tab, state.settings.language)}</span>
     </a>
   `;
 }

@@ -1,3 +1,4 @@
+import type { Language } from "../locales.ts";
 import type {
   ChannelAccountSnapshot,
   ChannelsStatusSnapshot,
@@ -47,6 +48,7 @@ export type ChannelsProps = {
   onNostrProfileSave: () => void;
   onNostrProfileImport: () => void;
   onNostrProfileToggleAdvanced: () => void;
+  language: Language;
 };
 
 export type ChannelsChannelData = {

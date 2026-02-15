@@ -2,6 +2,8 @@ import { html } from "lit";
 import type { GatewayHelloOk } from "../gateway.ts";
 import type { UiSettings } from "../storage.ts";
 import { formatRelativeTimestamp, formatDurationHuman } from "../format.ts";
+import { icons } from "../icons.ts";
+import { getTranslation, type Language } from "../locales.ts";
 import { formatNextRun } from "../presenter.ts";
 
 export type OverviewProps = {
@@ -20,6 +22,9 @@ export type OverviewProps = {
   onSessionKeyChange: (next: string) => void;
   onConnect: () => void;
   onRefresh: () => void;
+  language: Language;
+  showToken: boolean;
+  onToggleShowToken: () => void;
 };
 
 export function renderOverview(props: OverviewProps) {
@@ -48,7 +53,7 @@ export function renderOverview(props: OverviewProps) {
     if (!hasToken && !hasPassword) {
       return html`
         <div class="muted" style="margin-top: 8px">
-          This gateway requires auth. Add a token or password, then click Connect.
+          ${getTranslation(props.settings.language, "overview.auth_hint_auth_required", "This gateway requires auth. Add a token or password, then click Connect.")}
           <div style="margin-top: 6px">
             <span class="mono">openclaw dashboard --no-open</span> → open the Control UI<br />
             <span class="mono">openclaw doctor --generate-gateway-token</span> → set token
@@ -68,7 +73,7 @@ export function renderOverview(props: OverviewProps) {
     }
     return html`
       <div class="muted" style="margin-top: 8px">
-        Auth failed. Update the token or password in Control UI settings, then click Connect.
+        ${getTranslation(props.settings.language, "overview.auth_failed", "Auth failed. Update the token or password in Control UI settings, then click Connect.")}
         <div style="margin-top: 6px">
           <a
             class="session-link"
@@ -127,12 +132,12 @@ export function renderOverview(props: OverviewProps) {
 
   return html`
     <section class="grid grid-cols-2">
-      <div class="card">
-        <div class="card-title">Gateway Access</div>
-        <div class="card-sub">Where the dashboard connects and how it authenticates.</div>
+      <div class="card card--gateway">
+        <div class="card-title">${getTranslation(props.settings.language, "overview.gateway_access")}</div>
+        <div class="card-sub">${getTranslation(props.settings.language, "overview.gateway_access_sub")}</div>
         <div class="form-grid" style="margin-top: 16px;">
           <label class="field">
-            <span>WebSocket URL</span>
+            <span>${getTranslation(props.settings.language, "overview.websocket_url")}</span>
             <input
               .value=${props.settings.gatewayUrl}
               @input=${(e: Event) => {
@@ -147,18 +152,24 @@ export function renderOverview(props: OverviewProps) {
               ? ""
               : html`
                 <label class="field">
-                  <span>Gateway Token</span>
-                  <input
-                    .value=${props.settings.token}
-                    @input=${(e: Event) => {
-                      const v = (e.target as HTMLInputElement).value;
-                      props.onSettingsChange({ ...props.settings, token: v });
-                    }}
-                    placeholder="OPENCLAW_GATEWAY_TOKEN"
-                  />
+                  <span>${getTranslation(props.settings.language, "overview.gateway_token")}</span>
+                  <div class="input-with-toggle">
+                    <input
+                      type=${props.showToken ? "text" : "password"}
+                      .value=${props.settings.token}
+                      @input=${(e: Event) => {
+                        const v = (e.target as HTMLInputElement).value;
+                        props.onSettingsChange({ ...props.settings, token: v });
+                      }}
+                      placeholder="OPENCLAW_GATEWAY_TOKEN"
+                    />
+                    <button class="toggle-btn" @click=${() => props.onToggleShowToken()} title="Toggle Visibility">
+                       <span class="nav-item__icon">${props.showToken ? icons.eyeOff : icons.eye}</span>
+                    </button>
+                  </div>
                 </label>
                 <label class="field">
-                  <span>Password (not stored)</span>
+                  <span>${getTranslation(props.settings.language, "overview.password")}</span>
                   <input
                     type="password"
                     .value=${props.password}
@@ -172,7 +183,7 @@ export function renderOverview(props: OverviewProps) {
               `
           }
           <label class="field">
-            <span>Default Session Key</span>
+            <span>${getTranslation(props.settings.language, "overview.default_session_key")}</span>
             <input
               .value=${props.settings.sessionKey}
               @input=${(e: Event) => {
@@ -182,33 +193,33 @@ export function renderOverview(props: OverviewProps) {
             />
           </label>
         </div>
-        <div class="row" style="margin-top: 14px;">
-          <button class="btn" @click=${() => props.onConnect()}>Connect</button>
-          <button class="btn" @click=${() => props.onRefresh()}>Refresh</button>
-          <span class="muted">${isTrustedProxy ? "Authenticated via trusted proxy." : "Click Connect to apply connection changes."}</span>
+        <div class="row" style="margin-top: 24px;">
+          <button class="btn btn--primary" @click=${() => props.onConnect()}>${getTranslation(props.settings.language, "overview.connect")}</button>
+          <button class="btn" @click=${() => props.onRefresh()}>${getTranslation(props.settings.language, "overview.refresh")}</button>
+          <span class="muted" style="font-size: 11px;">${isTrustedProxy ? getTranslation(props.settings.language, "overview.auth_hint_trusted") : getTranslation(props.settings.language, "overview.auth_hint_connect")}</span>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title">Snapshot</div>
-        <div class="card-sub">Latest gateway handshake information.</div>
+      <div class="card card--snapshot">
+        <div class="card-title">${getTranslation(props.settings.language, "overview.snapshot")}</div>
+        <div class="card-sub">${getTranslation(props.settings.language, "overview.snapshot_sub")}</div>
         <div class="stat-grid" style="margin-top: 16px;">
           <div class="stat">
-            <div class="stat-label">Status</div>
+            <div class="stat-label">${getTranslation(props.settings.language, "overview.status")}</div>
             <div class="stat-value ${props.connected ? "ok" : "warn"}">
-              ${props.connected ? "Connected" : "Disconnected"}
+              ${props.connected ? getTranslation(props.settings.language, "overview.connected") : getTranslation(props.settings.language, "overview.disconnected")}
             </div>
           </div>
           <div class="stat">
-            <div class="stat-label">Uptime</div>
+            <div class="stat-label">${getTranslation(props.settings.language, "overview.uptime")}</div>
             <div class="stat-value">${uptime}</div>
           </div>
           <div class="stat">
-            <div class="stat-label">Tick Interval</div>
+            <div class="stat-label">${getTranslation(props.settings.language, "overview.tick_interval")}</div>
             <div class="stat-value">${tick}</div>
           </div>
           <div class="stat">
-            <div class="stat-label">Last Channels Refresh</div>
+            <div class="stat-label">${getTranslation(props.settings.language, "overview.last_channels_refresh")}</div>
             <div class="stat-value">
               ${props.lastChannelsRefresh ? formatRelativeTimestamp(props.lastChannelsRefresh) : "n/a"}
             </div>
@@ -223,50 +234,54 @@ export function renderOverview(props: OverviewProps) {
             </div>`
             : html`
                 <div class="callout" style="margin-top: 14px">
-                  Use Channels to link WhatsApp, Telegram, Discord, Signal, or iMessage.
+                  ${getTranslation(props.settings.language, "overview.channels_hint")}
                 </div>
               `
         }
+        <div class="row" style="margin-top: 24px;">
+          <button class="btn btn--primary" @click=${() => props.onRefresh()}>${getTranslation(props.settings.language, "overview.refresh_snapshot") || "Refresh Snapshot"}</button>
+          <span class="muted" style="font-size: 11px;">${getTranslation(props.settings.language, "overview.snapshot_hint") || "Last updated just now"}</span>
+        </div>
       </div>
     </section>
 
     <section class="grid grid-cols-3" style="margin-top: 18px;">
       <div class="card stat-card">
-        <div class="stat-label">Instances</div>
+        <div class="stat-label">${getTranslation(props.settings.language, "overview.instances")}</div>
         <div class="stat-value">${props.presenceCount}</div>
-        <div class="muted">Presence beacons in the last 5 minutes.</div>
+        <div class="muted">${getTranslation(props.settings.language, "overview.instances_sub")}</div>
       </div>
       <div class="card stat-card">
-        <div class="stat-label">Sessions</div>
+        <div class="stat-label">${getTranslation(props.settings.language, "overview.sessions")}</div>
         <div class="stat-value">${props.sessionsCount ?? "n/a"}</div>
-        <div class="muted">Recent session keys tracked by the gateway.</div>
+        <div class="muted">${getTranslation(props.settings.language, "overview.sessions_sub")}</div>
       </div>
       <div class="card stat-card">
-        <div class="stat-label">Cron</div>
+        <div class="stat-label">${getTranslation(props.settings.language, "overview.cron")}</div>
         <div class="stat-value">
-          ${props.cronEnabled == null ? "n/a" : props.cronEnabled ? "Enabled" : "Disabled"}
+          ${props.cronEnabled == null ? "n/a" : props.cronEnabled ? getTranslation(props.settings.language, "overview.enabled") : getTranslation(props.settings.language, "overview.disabled")}
         </div>
-        <div class="muted">Next wake ${formatNextRun(props.cronNext)}</div>
+        <div class="muted">${getTranslation(props.settings.language, "overview.cron_sub")} ${formatNextRun(props.cronNext)}</div>
       </div>
     </section>
 
     <section class="card" style="margin-top: 18px;">
-      <div class="card-title">Notes</div>
-      <div class="card-sub">Quick reminders for remote control setups.</div>
+      <div class="card-title">${getTranslation(props.settings.language, "overview.notes")}</div>
+      <div class="card-sub">${getTranslation(props.settings.language, "overview.notes_sub")}</div>
       <div class="note-grid" style="margin-top: 14px;">
         <div>
-          <div class="note-title">Tailscale serve</div>
+          <div class="note-title">${getTranslation(props.settings.language, "overview.tailscale_serve")}</div>
           <div class="muted">
-            Prefer serve mode to keep the gateway on loopback with tailnet auth.
+            ${getTranslation(props.settings.language, "overview.tailscale_serve_sub")}
           </div>
         </div>
         <div>
-          <div class="note-title">Session hygiene</div>
-          <div class="muted">Use /new or sessions.patch to reset context.</div>
+          <div class="note-title">${getTranslation(props.settings.language, "overview.session_hygiene")}</div>
+          <div class="muted">${getTranslation(props.settings.language, "overview.session_hygiene_sub")}</div>
         </div>
         <div>
-          <div class="note-title">Cron reminders</div>
-          <div class="muted">Use isolated sessions for recurring runs.</div>
+          <div class="note-title">${getTranslation(props.settings.language, "overview.cron_reminders")}</div>
+          <div class="muted">${getTranslation(props.settings.language, "overview.cron_reminders_sub")}</div>
         </div>
       </div>
     </section>

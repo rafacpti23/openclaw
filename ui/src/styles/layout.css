@@ -200,7 +200,8 @@
   overflow-x: hidden;
   padding: 16px 12px;
   background: var(--bg);
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
+  /* Firefox */
   transition:
     width var(--shell-focus-duration) var(--shell-focus-ease),
     padding var(--shell-focus-duration) var(--shell-focus-ease),
@@ -209,7 +210,8 @@
 }
 
 .nav::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  display: none;
+  /* Chrome/Safari */
 }
 
 .shell--chat-focus .nav {
@@ -307,7 +309,10 @@
   padding: 6px 10px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted);
+  color: #3a86ff;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-bottom: 4px;
   background: transparent;
   border: none;
@@ -358,13 +363,14 @@
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--muted);
+  color: #3a86ff;
   cursor: pointer;
   text-decoration: none;
   transition:
     border-color var(--duration-fast) ease,
     background var(--duration-fast) ease,
-    color var(--duration-fast) ease;
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
 }
 
 .nav-item__icon {
@@ -390,14 +396,15 @@
 
 .nav-item__text {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .nav-item:hover {
-  color: var(--text);
+  color: #60a5fa;
   background: var(--bg-hover);
   text-decoration: none;
+  transform: translateX(4px);
 }
 
 .nav-item:hover .nav-item__icon {
@@ -420,7 +427,7 @@
 
 .content {
   grid-area: content;
-  padding: 12px 16px 32px;
+  padding: 24px 20px 32px;
   display: block;
   min-height: 0;
   overflow-y: auto;
@@ -453,15 +460,15 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  padding: 4px 8px;
-  overflow: hidden;
+  padding: 0px 8px 8px;
+  overflow: visible;
   transform-origin: top center;
   transition:
     opacity var(--shell-focus-duration) var(--shell-focus-ease),
     transform var(--shell-focus-duration) var(--shell-focus-ease),
     max-height var(--shell-focus-duration) var(--shell-focus-ease),
     padding var(--shell-focus-duration) var(--shell-focus-ease);
-  max-height: 80px;
+  min-height: 50px;
 }
 
 .shell--chat-focus .content-header {

@@ -8,6 +8,7 @@ import type {
   CronStatus,
   SkillStatusReport,
 } from "../types.ts";
+import { getTranslation, type Language } from "../locales.ts";
 import {
   renderAgentFiles,
   renderAgentChannels,
@@ -84,6 +85,12 @@ export type AgentsProps = {
   onAgentSkillToggle: (agentId: string, skillName: string, enabled: boolean) => void;
   onAgentSkillsClear: (agentId: string) => void;
   onAgentSkillsDisableAll: (agentId: string) => void;
+  onDeleteAgent: (agentId: string) => void;
+  onAvatarChange: (agentId: string, avatar: string) => void;
+  onEmojiChange: (agentId: string, emoji: string) => void;
+  onIdentitySave: (agentId: string, params: { avatar?: string; emoji?: string }) => void;
+  onCreateAgent: () => void;
+  language: Language;
 };
 
 export type AgentContext = {
@@ -108,12 +115,21 @@ export function renderAgents(props: AgentsProps) {
       <section class="card agents-sidebar">
         <div class="row" style="justify-content: space-between;">
           <div>
-            <div class="card-title">Agents</div>
+            <div class="card-title">${getTranslation(props.language, "agents.title")}</div>
             <div class="card-sub">${agents.length} configured.</div>
           </div>
-          <button class="btn btn--sm" ?disabled=${props.loading} @click=${props.onRefresh}>
-            ${props.loading ? "Loading…" : "Refresh"}
-          </button>
+          <div class="row" style="gap: 8px;">
+            <button
+              class="btn btn--sm primary"
+              ?disabled=${props.loading}
+              @click=${props.onCreateAgent}
+            >
+              + ${getTranslation(props.language, "agents.create")}
+            </button>
+            <button class="btn btn--sm" ?disabled=${props.loading} @click=${props.onRefresh}>
+              ${props.loading ? "Loading…" : getTranslation(props.language, "overview.refresh")}
+            </button>
+          </div>
         </div>
         ${
           props.error
@@ -152,8 +168,13 @@ export function renderAgents(props: AgentsProps) {
           !selectedAgent
             ? html`
                 <div class="card">
-                  <div class="card-title">Select an agent</div>
+                  <div class="card-title">${getTranslation(props.language, "agents.no_agents", "Select an agent")}</div>
                   <div class="card-sub">Pick an agent to inspect its workspace and tools.</div>
+                  <div style="margin-top: 16px;">
+                    <button class="btn primary" @click=${props.onCreateAgent}>
+                      ${getTranslation(props.language, "agents.create", "Create New Agent")}
+                    </button>
+                  </div>
                 </div>
               `
             : html`
@@ -161,6 +182,7 @@ export function renderAgents(props: AgentsProps) {
                   selectedAgent,
                   defaultId,
                   props.agentIdentityById[selectedAgent.id] ?? null,
+                  (agentId) => props.onDeleteAgent(agentId),
                 )}
                 ${renderAgentTabs(props.activePanel, (panel) => props.onSelectPanel(panel))}
                 ${
@@ -180,6 +202,9 @@ export function renderAgents(props: AgentsProps) {
                         onConfigSave: props.onConfigSave,
                         onModelChange: props.onModelChange,
                         onModelFallbacksChange: props.onModelFallbacksChange,
+                        onAvatarChange: props.onAvatarChange,
+                        onEmojiChange: props.onEmojiChange,
+                        onIdentitySave: props.onIdentitySave,
                       })
                     : nothing
                 }
@@ -289,23 +314,54 @@ function renderAgentHeader(
   agent: AgentsListResult["agents"][number],
   defaultId: string | null,
   agentIdentity: AgentIdentityResult | null,
+  onDelete: (agentId: string) => void,
 ) {
   const badge = agentBadgeText(agent.id, defaultId);
   const displayName = normalizeAgentLabel(agent);
-  const subtitle = agent.identity?.theme?.trim() || "Agent workspace and routing.";
+  const theme = agent.identity?.theme?.trim() || "Agent workspace and routing.";
   const emoji = resolveAgentEmoji(agent, agentIdentity);
+  const avatarUrl =
+    agentIdentity?.avatar?.startsWith("data:") || agentIdentity?.avatar?.startsWith("http")
+      ? agentIdentity.avatar
+      : undefined;
+
   return html`
     <section class="card agent-header">
-      <div class="agent-header-main">
-        <div class="agent-avatar agent-avatar--lg">${emoji || displayName.slice(0, 1)}</div>
+      <div class="agent-header-main" style="flex: 1;">
+        <div class="agent-avatar agent-avatar--lg">
+          ${avatarUrl ? html`<img src=${avatarUrl} alt="" />` : emoji || displayName.slice(0, 1)}
+        </div>
         <div>
           <div class="card-title">${displayName}</div>
-          <div class="card-sub">${subtitle}</div>
+          <div class="card-sub">${theme}</div>
         </div>
       </div>
-      <div class="agent-header-meta">
-        <div class="mono">${agent.id}</div>
-        ${badge ? html`<span class="agent-pill">${badge}</span>` : nothing}
+      <div class="agent-header-meta" style="align-items: flex-end;">
+        <div class="row" style="gap: 8px;">
+          <div class="mono">${agent.id}</div>
+          ${badge ? html`<span class="agent-pill">${badge}</span>` : nothing}
+        </div>
+        ${
+          agent.id === defaultId
+            ? nothing
+            : html`
+            <button
+              class="btn btn--sm danger"
+              style="margin-top: 8px;"
+              @click=${() => {
+                if (
+                  confirm(
+                    `Are you sure you want to delete agent "${agent.id}"? This will also remove its workspace files.`,
+                  )
+                ) {
+                  onDelete(agent.id);
+                }
+              }}
+            >
+              Delete Agent
+            </button>
+          `
+        }
       </div>
     </section>
   `;
@@ -352,6 +408,9 @@ function renderAgentOverview(params: {
   onConfigSave: () => void;
   onModelChange: (agentId: string, modelId: string | null) => void;
   onModelFallbacksChange: (agentId: string, fallbacks: string[]) => void;
+  onAvatarChange: (agentId: string, avatar: string) => void;
+  onEmojiChange: (agentId: string, emoji: string) => void;
+  onIdentitySave: (agentId: string, params: { avatar?: string; emoji?: string }) => void;
 }) {
   const {
     agent,
@@ -367,6 +426,9 @@ function renderAgentOverview(params: {
     onConfigSave,
     onModelChange,
     onModelFallbacksChange,
+    onAvatarChange,
+    onEmojiChange,
+    onIdentitySave,
   } = params;
   const config = resolveAgentConfig(configForm, agent.id);
   const workspaceFromFiles =
@@ -482,6 +544,91 @@ function renderAgentOverview(params: {
           >
             ${configSaving ? "Saving…" : "Save"}
           </button>
+        </div>
+      </div>
+
+      <div class="agent-identity-edit" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-subtle);">
+        <div class="label" style="font-weight: 600; font-size: 0.9em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;">Avatar & Identity</div>
+        <div class="row" style="gap: 20px; align-items: flex-start;">
+          <div class="agent-avatar agent-avatar--xl" style="width: 80px; height: 80px; font-size: 32px; flex-shrink: 0;">
+             ${
+               agentIdentity?.avatar?.startsWith("data:") ||
+               agentIdentity?.avatar?.startsWith("http")
+                 ? html`<img src=${agentIdentity.avatar} alt="" />`
+                 : resolvedEmoji || identityName.slice(0, 1)
+             }
+          </div>
+           <div style="flex: 1;">
+             <label class="field">
+               <span>Avatar URL or Data URI</span>
+               <div class="row" style="gap: 8px;">
+                 <input
+                   id="agent-avatar-${agent.id}"
+                   type="text"
+                   placeholder="https://... or data:image/..."
+                   .value=${agentIdentity?.avatar || ""}
+                   @change=${(e: Event) => onAvatarChange(agent.id, (e.target as HTMLInputElement).value)}
+                 />
+                 <button
+                   class="btn btn--sm"
+                   @click=${() => {
+                     const input = document.createElement("input");
+                     input.type = "file";
+                     input.accept = "image/*";
+                     input.onchange = (e: Event) => {
+                       const file = (e.target as HTMLInputElement).files?.[0];
+                       if (!file) {
+                         return;
+                       }
+                       const reader = new FileReader();
+                       reader.onload = (re) => {
+                         const data = reader.result as string;
+                         onAvatarChange(agent.id, data);
+                       };
+                       reader.readAsDataURL(file);
+                     };
+                     input.click();
+                   }}
+                 >
+                   Upload
+                 </button>
+               </div>
+               <div class="agent-kv-sub muted" style="margin-top: 4px;">Provide a URL or upload a file to set the agent's picture.</div>
+             </label>
+ 
+             <label class="field" style="margin-top: 16px;">
+               <span>Identity Emoji</span>
+               <input
+                 id="agent-emoji-${agent.id}"
+                 type="text"
+                 placeholder="🤖"
+                 style="max-width: 80px; text-align: center;"
+                 .value=${agentIdentity?.emoji || ""}
+                 @change=${(e: Event) => onEmojiChange(agent.id, (e.target as HTMLInputElement).value)}
+               />
+               <div class="agent-kv-sub muted" style="margin-top: 4px;">Single character used in sidebar icons.</div>
+             </label>
+
+              <div class="row" style="justify-content: flex-end; margin-top: 16px;">
+                <button
+                  class="btn btn--sm primary"
+                  @click=${() => {
+                    const avatarInput = document.getElementById(
+                      `agent-avatar-${agent.id}`,
+                    ) as HTMLInputElement;
+                    const emojiInput = document.getElementById(
+                      `agent-emoji-${agent.id}`,
+                    ) as HTMLInputElement;
+                    onIdentitySave(agent.id, {
+                      avatar: avatarInput?.value,
+                      emoji: emojiInput?.value,
+                    });
+                  }}
+                >
+                  Save Identity
+                </button>
+              </div>
+           </div>
         </div>
       </div>
     </section>

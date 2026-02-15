@@ -9,11 +9,11 @@ export type AgentIdentityState = {
   agentIdentityById: Record<string, AgentIdentityResult>;
 };
 
-export async function loadAgentIdentity(state: AgentIdentityState, agentId: string) {
+export async function loadAgentIdentity(state: AgentIdentityState, agentId: string, force = false) {
   if (!state.client || !state.connected || state.agentIdentityLoading) {
     return;
   }
-  if (state.agentIdentityById[agentId]) {
+  if (!force && state.agentIdentityById[agentId]) {
     return;
   }
   state.agentIdentityLoading = true;
@@ -32,11 +32,15 @@ export async function loadAgentIdentity(state: AgentIdentityState, agentId: stri
   }
 }
 
-export async function loadAgentIdentities(state: AgentIdentityState, agentIds: string[]) {
+export async function loadAgentIdentities(
+  state: AgentIdentityState,
+  agentIds: string[],
+  force = false,
+) {
   if (!state.client || !state.connected || state.agentIdentityLoading) {
     return;
   }
-  const missing = agentIds.filter((id) => !state.agentIdentityById[id]);
+  const missing = force ? agentIds : agentIds.filter((id) => !state.agentIdentityById[id]);
   if (missing.length === 0) {
     return;
   }

@@ -11,6 +11,7 @@ import {
 } from "../chat/grouped-render.ts";
 import { normalizeMessage, normalizeRoleForGrouping } from "../chat/message-normalizer.ts";
 import { icons } from "../icons.ts";
+import { getTranslation, type Language } from "../locales.ts";
 import { detectTextDirection } from "../text-direction.ts";
 import { renderMarkdownSidebar } from "./markdown-sidebar.ts";
 import "../components/resizable-divider.ts";
@@ -69,6 +70,7 @@ export type ChatProps = {
   onCloseSidebar?: () => void;
   onSplitRatioChange?: (ratio: number) => void;
   onChatScroll?: (event: Event) => void;
+  language: Language;
 };
 
 const COMPACTION_TOAST_DURATION_MS = 5000;
@@ -78,7 +80,10 @@ function adjustTextareaHeight(el: HTMLTextAreaElement) {
   el.style.height = `${el.scrollHeight}px`;
 }
 
-function renderCompactionIndicator(status: CompactionIndicatorStatus | null | undefined) {
+function renderCompactionIndicator(
+  status: CompactionIndicatorStatus | null | undefined,
+  lang: Language,
+) {
   if (!status) {
     return nothing;
   }
@@ -87,7 +92,7 @@ function renderCompactionIndicator(status: CompactionIndicatorStatus | null | un
   if (status.active) {
     return html`
       <div class="compaction-indicator compaction-indicator--active" role="status" aria-live="polite">
-        ${icons.loader} Compacting context...
+        ${icons.loader} ${getTranslation(lang, "chat.compacting")}
       </div>
     `;
   }
@@ -98,7 +103,7 @@ function renderCompactionIndicator(status: CompactionIndicatorStatus | null | un
     if (elapsed < COMPACTION_TOAST_DURATION_MS) {
       return html`
         <div class="compaction-indicator compaction-indicator--complete" role="status" aria-live="polite">
-          ${icons.check} Context compacted
+          ${icons.check} ${getTranslation(lang, "chat.compacted")}
         </div>
       `;
     }
@@ -201,9 +206,9 @@ export function renderChat(props: ChatProps) {
   const hasAttachments = (props.attachments?.length ?? 0) > 0;
   const composePlaceholder = props.connected
     ? hasAttachments
-      ? "Add a message or paste more images..."
-      : "Message (↩ to send, Shift+↩ for line breaks, paste images)"
-    : "Connect to the gateway to start chatting…";
+      ? getTranslation(props.language, "chat.placeholder_attachments")
+      : getTranslation(props.language, "chat.placeholder")
+    : getTranslation(props.language, "chat.placeholder_offline");
 
   const splitRatio = props.splitRatio ?? 0.6;
   const sidebarOpen = Boolean(props.sidebarOpen && props.onCloseSidebar);
@@ -217,7 +222,7 @@ export function renderChat(props: ChatProps) {
       ${
         props.loading
           ? html`
-              <div class="muted">Loading chat…</div>
+              <div class="muted">${getTranslation(props.language, "chat.loading")}</div>
             `
           : nothing
       }
@@ -324,7 +329,7 @@ export function renderChat(props: ChatProps) {
         props.queue.length
           ? html`
             <div class="chat-queue" role="status" aria-live="polite">
-              <div class="chat-queue__title">Queued (${props.queue.length})</div>
+              <div class="chat-queue__title">${getTranslation(props.language, "chat.queued_count").replace("{count}", String(props.queue.length))}</div>
               <div class="chat-queue__list">
                 ${props.queue.map(
                   (item) => html`
@@ -352,7 +357,7 @@ export function renderChat(props: ChatProps) {
           : nothing
       }
 
-      ${renderCompactionIndicator(props.compactionStatus)}
+      ${renderCompactionIndicator(props.compactionStatus, props.language)}
 
       ${
         props.showNewMessages
@@ -362,7 +367,7 @@ export function renderChat(props: ChatProps) {
               type="button"
               @click=${props.onScrollToBottom}
             >
-              New messages ${icons.arrowDown}
+              ${getTranslation(props.language, "chat.new_messages")} ${icons.arrowDown}
             </button>
           `
           : nothing
@@ -411,14 +416,14 @@ export function renderChat(props: ChatProps) {
               ?disabled=${!props.connected || (!canAbort && props.sending)}
               @click=${canAbort ? props.onAbort : props.onNewSession}
             >
-              ${canAbort ? "Stop" : "New session"}
+              ${canAbort ? getTranslation(props.language, "chat.stop") : getTranslation(props.language, "chat.new_session")}
             </button>
             <button
               class="btn primary"
               ?disabled=${!props.connected}
               @click=${props.onSend}
             >
-              ${isBusy ? "Queue" : "Send"}<kbd class="btn-kbd">↵</kbd>
+              ${isBusy ? getTranslation(props.language, "chat.queue") : getTranslation(props.language, "chat.send")}<kbd class="btn-kbd">↵</kbd>
             </button>
           </div>
         </div>
@@ -481,7 +486,9 @@ function buildChatItems(props: ChatProps): Array<ChatItem | MessageGroup> {
       key: "chat:history:notice",
       message: {
         role: "system",
-        content: `Showing last ${CHAT_HISTORY_RENDER_LIMIT} messages (${historyStart} hidden).`,
+        content: getTranslation(props.language, "chat.showing_last")
+          .replace("{limit}", String(CHAT_HISTORY_RENDER_LIMIT))
+          .replace("{hidden}", String(historyStart)),
         timestamp: Date.now(),
       },
     });

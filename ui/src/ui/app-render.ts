@@ -3,11 +3,16 @@ import type { AppViewState } from "./app-view-state.ts";
 import { parseAgentSessionKey } from "../../../src/routing/session-key.js";
 import { refreshChatAvatar } from "./app-chat.ts";
 import { renderUsageTab } from "./app-render-usage-tab.ts";
-import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.helpers.ts";
+import {
+  renderChatControls,
+  renderTab,
+  renderThemeToggle,
+  renderLanguageSelector,
+} from "./app-render.helpers.ts";
 import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controllers/agent-files.ts";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
 import { loadAgentSkills } from "./controllers/agent-skills.ts";
-import { loadAgents } from "./controllers/agents.ts";
+import { createAgent, deleteAgent, loadAgents, updateAgent } from "./controllers/agents.ts";
 import { loadChannels } from "./controllers/channels.ts";
 import { loadChatHistory } from "./controllers/chat.ts";
 import {
@@ -51,6 +56,7 @@ import {
   updateSkillEnabled,
 } from "./controllers/skills.ts";
 import { icons } from "./icons.ts";
+import { getTranslation } from "./locales.ts";
 import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.ts";
 import { renderAgents } from "./views/agents.ts";
 import { renderChannels } from "./views/channels.ts";
@@ -137,20 +143,21 @@ export function renderApp(state: AppViewState) {
             <span>Health</span>
             <span class="mono">${state.connected ? "OK" : "Offline"}</span>
           </div>
+          ${renderLanguageSelector(state)}
           ${renderThemeToggle(state)}
         </div>
       </header>
       <aside class="nav ${state.settings.navCollapsed ? "nav--collapsed" : ""}">
         ${TAB_GROUPS.map((group) => {
-          const isGroupCollapsed = state.settings.navGroupsCollapsed[group.label] ?? false;
-          const hasActiveTab = group.tabs.some((tab) => tab === state.tab);
+          const isGroupCollapsed = state.settings.navGroupsCollapsed[group.key] ?? false;
+          const hasActiveTab = (group.tabs as ReadonlyArray<string>).includes(state.tab);
           return html`
             <div class="nav-group ${isGroupCollapsed && !hasActiveTab ? "nav-group--collapsed" : ""}">
               <button
                 class="nav-label"
                 @click=${() => {
                   const next = { ...state.settings.navGroupsCollapsed };
-                  next[group.label] = !isGroupCollapsed;
+                  next[group.key] = !isGroupCollapsed;
                   state.applySettings({
                     ...state.settings,
                     navGroupsCollapsed: next,
@@ -158,7 +165,7 @@ export function renderApp(state: AppViewState) {
                 }}
                 aria-expanded=${!isGroupCollapsed}
               >
-                <span class="nav-label__text">${group.label}</span>
+                <span class="nav-label__text">${getTranslation(state.settings.language, `nav.group.${group.key}`)}</span>
                 <span class="nav-label__chevron">${isGroupCollapsed ? "+" : "−"}</span>
               </button>
               <div class="nav-group__items">
@@ -188,8 +195,8 @@ export function renderApp(state: AppViewState) {
       <main class="content ${isChat ? "content--chat" : ""}">
         <section class="content-header">
           <div>
-            ${state.tab === "usage" ? nothing : html`<div class="page-title">${titleForTab(state.tab)}</div>`}
-            ${state.tab === "usage" ? nothing : html`<div class="page-sub">${subtitleForTab(state.tab)}</div>`}
+            ${state.tab === "usage" ? nothing : html`<div class="page-title"><h1>${titleForTab(state.tab, state.settings.language)}</h1></div>`}
+            ${state.tab === "usage" ? nothing : html`<div class="page-sub">${subtitleForTab(state.tab, state.settings.language)}</div>`}
           </div>
           <div class="page-meta">
             ${state.lastError ? html`<div class="pill danger">${state.lastError}</div>` : nothing}
@@ -225,6 +232,9 @@ export function renderApp(state: AppViewState) {
                 },
                 onConnect: () => state.connect(),
                 onRefresh: () => state.loadOverview(),
+                language: state.settings.language,
+                showToken: state.showOverviewToken,
+                onToggleShowToken: () => (state.showOverviewToken = !state.showOverviewToken),
               })
             : nothing
         }
@@ -264,6 +274,7 @@ export function renderApp(state: AppViewState) {
                 onNostrProfileSave: () => state.handleNostrProfileSave(),
                 onNostrProfileImport: () => state.handleNostrProfileImport(),
                 onNostrProfileToggleAdvanced: () => state.handleNostrProfileToggleAdvanced(),
+                language: state.settings.language,
               })
             : nothing
         }
@@ -374,6 +385,18 @@ export function renderApp(state: AppViewState) {
                   const agentIds = state.agentsList?.agents?.map((entry) => entry.id) ?? [];
                   if (agentIds.length > 0) {
                     void loadAgentIdentities(state, agentIds);
+                  }
+                },
+                onCreateAgent: async () => {
+                  const name = prompt("Enter agent name:");
+                  if (!name) {
+                    return;
+                  }
+                  try {
+                    await createAgent(state, { name });
+                    await loadAgents(state);
+                  } catch (err) {
+                    alert("Failed to create agent: " + String(err));
                   }
                 },
                 onSelectAgent: (agentId) => {
@@ -676,6 +699,23 @@ export function renderApp(state: AppViewState) {
                     : { fallbacks: normalized };
                   updateConfigFormValue(state, basePath, next);
                 },
+                onDeleteAgent: (agentId) => deleteAgent(state, agentId),
+                onAvatarChange: (agentId, avatar) => {
+                  void updateAgent(state, { agentId, avatar }).catch((err) => {
+                    alert("Failed to update avatar: " + String(err));
+                  });
+                },
+                onEmojiChange: (agentId, emoji) => {
+                  void updateAgent(state, { agentId, emoji }).catch((err) => {
+                    alert("Failed to update emoji: " + String(err));
+                  });
+                },
+                onIdentitySave: (agentId, params) => {
+                  void updateAgent(state, { agentId, ...params }).catch((err) => {
+                    alert("Failed to update identity: " + String(err));
+                  });
+                },
+                language: state.settings.language,
               })
             : nothing
         }
@@ -835,6 +875,7 @@ export function renderApp(state: AppViewState) {
                   });
                 },
                 onChatScroll: (event) => state.handleChatScroll(event),
+                language: state.settings.language,
                 onDraftChange: (next) => (state.chatMessage = next),
                 attachments: state.chatAttachments,
                 onAttachmentsChange: (next) => (state.chatAttachments = next),

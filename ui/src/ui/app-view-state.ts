@@ -123,6 +123,7 @@ export type AppViewState = {
   presenceEntries: PresenceEntry[];
   presenceError: string | null;
   presenceStatus: string | null;
+  showOverviewToken: boolean;
   agentsLoading: boolean;
   agentsList: AgentsListResult | null;
   agentsError: string | null;

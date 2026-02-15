@@ -199,6 +199,7 @@ export class OpenClawApp extends LitElement {
   @state() presenceError: string | null = null;
   @state() presenceStatus: string | null = null;
 
+  @state() showOverviewToken = false;
   @state() agentsLoading = false;
   @state() agentsList: AgentsListResult | null = null;
   @state() agentsError: string | null = null;

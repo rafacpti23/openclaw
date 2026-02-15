@@ -15,6 +15,7 @@ import type {
 } from "../types.ts";
 import type { ChannelKey, ChannelsChannelData, ChannelsProps } from "./channels.types.ts";
 import { formatRelativeTimestamp } from "../format.ts";
+import { getTranslation, type Language } from "../locales.ts";
 import { renderChannelConfigSection } from "./channels.config.ts";
 import { renderDiscordCard } from "./channels.discord.ts";
 import { renderGoogleChatCard } from "./channels.googlechat.ts";
@@ -70,8 +71,8 @@ export function renderChannels(props: ChannelsProps) {
     <section class="card" style="margin-top: 18px;">
       <div class="row" style="justify-content: space-between;">
         <div>
-          <div class="card-title">Channel health</div>
-          <div class="card-sub">Channel status snapshots from the gateway.</div>
+          <div class="card-title">${getTranslation(props.language, "channels.health")}</div>
+          <div class="card-sub">${getTranslation(props.language, "channels.health_sub")}</div>
         </div>
         <div class="muted">${props.lastSuccessAt ? formatRelativeTimestamp(props.lastSuccessAt) : "n/a"}</div>
       </div>
@@ -83,7 +84,7 @@ export function renderChannels(props: ChannelsProps) {
           : nothing
       }
       <pre class="code-block" style="margin-top: 12px;">
-${props.snapshot ? JSON.stringify(props.snapshot, null, 2) : "No snapshot yet."}
+${props.snapshot ? JSON.stringify(props.snapshot, null, 2) : getTranslation(props.language, "channels.no_snapshot")}
       </pre>
     </section>
   `;
@@ -194,29 +195,29 @@ function renderGenericChannelCard(
   return html`
     <div class="card">
       <div class="card-title">${label}</div>
-      <div class="card-sub">Channel status and configuration.</div>
+      <div class="card-sub">${getTranslation(props.language, "channels.card_sub")}</div>
       ${accountCountLabel}
 
       ${
         accounts.length > 0
           ? html`
             <div class="account-card-list">
-              ${accounts.map((account) => renderGenericAccount(account))}
+              ${accounts.map((account) => renderGenericAccount(account, props.language))}
             </div>
           `
           : html`
             <div class="status-list" style="margin-top: 16px;">
               <div>
-                <span class="label">Configured</span>
-                <span>${configured == null ? "n/a" : configured ? "Yes" : "No"}</span>
+                <span class="label">${getTranslation(props.language, "channels.configured")}</span>
+                <span>${configured == null ? getTranslation(props.language, "channels.na") : configured ? getTranslation(props.language, "channels.yes") : getTranslation(props.language, "channels.no")}</span>
               </div>
               <div>
-                <span class="label">Running</span>
-                <span>${running == null ? "n/a" : running ? "Yes" : "No"}</span>
+                <span class="label">${getTranslation(props.language, "channels.running")}</span>
+                <span>${running == null ? getTranslation(props.language, "channels.na") : running ? getTranslation(props.language, "channels.yes") : getTranslation(props.language, "channels.no")}</span>
               </div>
               <div>
-                <span class="label">Connected</span>
-                <span>${connected == null ? "n/a" : connected ? "Yes" : "No"}</span>
+                <span class="label">${getTranslation(props.language, "channels.connected")}</span>
+                <span>${connected == null ? getTranslation(props.language, "channels.na") : connected ? getTranslation(props.language, "channels.yes") : getTranslation(props.language, "channels.no")}</span>
               </div>
             </div>
           `
@@ -283,7 +284,7 @@ function deriveConnectedStatus(account: ChannelAccountSnapshot): "Yes" | "No" | 
   return "n/a";
 }
 
-function renderGenericAccount(account: ChannelAccountSnapshot) {
+function renderGenericAccount(account: ChannelAccountSnapshot, lang: Language) {
   const runningStatus = deriveRunningStatus(account);
   const connectedStatus = deriveConnectedStatus(account);
 
@@ -295,20 +296,20 @@ function renderGenericAccount(account: ChannelAccountSnapshot) {
       </div>
       <div class="status-list account-card-status">
         <div>
-          <span class="label">Running</span>
-          <span>${runningStatus}</span>
+          <span class="label">${getTranslation(lang, "channels.running")}</span>
+          <span>${runningStatus === "Yes" ? getTranslation(lang, "channels.yes") : runningStatus === "Active" ? getTranslation(lang, "channels.active") : getTranslation(lang, "channels.no")}</span>
         </div>
         <div>
-          <span class="label">Configured</span>
-          <span>${account.configured ? "Yes" : "No"}</span>
+          <span class="label">${getTranslation(lang, "channels.configured")}</span>
+          <span>${account.configured ? getTranslation(lang, "channels.yes") : getTranslation(lang, "channels.no")}</span>
         </div>
         <div>
-          <span class="label">Connected</span>
-          <span>${connectedStatus}</span>
+          <span class="label">${getTranslation(lang, "channels.connected")}</span>
+          <span>${connectedStatus === "Yes" ? getTranslation(lang, "channels.yes") : connectedStatus === "Active" ? getTranslation(lang, "channels.active") : connectedStatus === "No" ? getTranslation(lang, "channels.no") : getTranslation(lang, "channels.na")}</span>
         </div>
         <div>
-          <span class="label">Last inbound</span>
-          <span>${account.lastInboundAt ? formatRelativeTimestamp(account.lastInboundAt) : "n/a"}</span>
+          <span class="label">${getTranslation(lang, "channels.last_inbound")}</span>
+          <span>${account.lastInboundAt ? formatRelativeTimestamp(account.lastInboundAt) : getTranslation(lang, "channels.na")}</span>
         </div>
         ${
           account.lastError
