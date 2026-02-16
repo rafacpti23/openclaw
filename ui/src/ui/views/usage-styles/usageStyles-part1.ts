@@ -234,6 +234,9 @@ export const usageStylesPart1 = `
     align-items: center;
     margin-top: 14px;
   }
+  details.usage-filter-select[open] {
+    z-index: 20;
+  }
   details.usage-filter-select {
     position: relative;
     border: 1px solid var(--border);
@@ -263,13 +266,13 @@ export const usageStylesPart1 = `
     position: absolute;
     left: 0;
     top: calc(100% + 6px);
-    background: var(--bg);
+    background: var(--bg-elevated);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     min-width: 220px;
-    z-index: 20;
+    z-index: 100;
   }
   .usage-filter-actions {
     display: flex;
