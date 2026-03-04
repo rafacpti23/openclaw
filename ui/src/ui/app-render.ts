@@ -241,7 +241,7 @@ export function renderApp(state: AppViewState) {
               <img src=${basePath ? `${basePath}/favicon.svg` : "/favicon.svg"} alt="OpenClaw" />
             </div>
             <div class="brand-text">
-              <div class="brand-title">OPENCLAW</div>
+              <div class="brand-title">OPENCLAW RM</div>
               <div class="brand-sub">Gateway Dashboard</div>
             </div>
           </div>
@@ -293,14 +293,27 @@ export function renderApp(state: AppViewState) {
           </div>
           <div class="nav-group__items">
             <a
-              class="nav-item nav-item--external"
-              href="https://docs.openclaw.ai"
+              class="nav-mini-banner"
+              href="https://painelcliente.com.br/aff.php?aff=78&gid=32"
               target=${EXTERNAL_LINK_TARGET}
               rel=${buildExternalLinkRel()}
-              title="${t("common.docs")} (opens in new tab)"
+              title="Banner (opens in new tab)"
             >
-              <span class="nav-item__icon" aria-hidden="true">${icons.book}</span>
-              <span class="nav-item__text">${t("common.docs")}</span>
+              <img
+                class="nav-mini-banner__image"
+                src="https://hkmequsfknqpqqxrldog.supabase.co/storage/v1/object/public/banners/1766719838171-mdz5eithw98.gif"
+                alt="Banner"
+              />
+            </a>
+            <a
+              class="nav-item"
+              href="https://wa.me/5527999082624"
+              target=${EXTERNAL_LINK_TARGET}
+              rel=${buildExternalLinkRel()}
+              title="Suporte via WhatsApp (opens in new tab)"
+            >
+              <span class="nav-item__icon" aria-hidden="true">${icons.messageSquare}</span>
+              <span class="nav-item__text">Suporte</span>
             </a>
           </div>
         </div>

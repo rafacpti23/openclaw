@@ -414,6 +414,35 @@
   color: var(--accent);
 }
 
+.nav-mini-banner {
+  display: block;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent-subtle) 20%, transparent);
+  text-decoration: none;
+  transition:
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.nav-mini-banner:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-subtle) 20%, transparent);
+  text-decoration: none;
+}
+
+.nav-mini-banner__image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1280 / 484;
+  object-fit: contain;
+  object-position: center;
+  border-radius: calc(var(--radius-md) - 4px);
+}
+
 /* ===========================================
    Content Area
    =========================================== */
